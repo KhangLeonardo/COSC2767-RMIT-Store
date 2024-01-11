@@ -48,7 +48,11 @@ pipeline {
                 script {
                     sshagent(credentials: ['testing-server-ssh-key']) {
                         sh """
-                            ssh -tt ec2-user@44.195.41.174 'sudo sh source-testing.sh'
+                            ssh -o StrictHostKeyChecking=no -tt ec2-user@44.195.41.174 << EOF
+                            sudo su
+                            sudo sh source-testing.sh
+                            exit
+                            exit
                         """
                     }
                 }
@@ -75,7 +79,7 @@ pipeline {
                             )
                         ]
                     )
-
+                    
                     // Parse the test-results.xml file and check for failures
                     def testResults = readFile('jenkins-collected-results/test-results.xml')
                     def failures = sh(script: "echo '${testResults}' | grep -c 'failures=\"[1-9]' || true", returnStatus: true).trim()
@@ -83,9 +87,9 @@ pipeline {
                     // Send email notification if there are test failures
                     if (failures.toInteger() > 0) {
                         emailext subject: "Test Failures in Pipeline",
-                                  body: "There are test failures in the pipeline. Please check the results.",
-                                  to: "khangtgr@gmail.com",
-                                  mimeType: 'text/plain'
+                                body: "There are test failures in the pipeline. Please check the results.",
+                                to: "khangtgr@gmail.com",
+                                mimeType: 'text/plain'
                     }
                 }
             }
